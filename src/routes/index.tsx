@@ -1,26 +1,263 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw } from "lucide-react";
+import {
+  applyPracticeResult,
+  buildInitialVocab,
+  getRecallProbability,
+  getTier,
+  markLearned,
+  normalizeAnswer,
+  pickPracticeIndex,
+  type Word,
+} from "@/lib/memory-engine";
+import { Flashcard } from "@/components/learning/Flashcard";
+import { RetentionGraph } from "@/components/learning/RetentionGraph";
+import { StatsTable } from "@/components/learning/StatsTable";
+import { StatCard } from "@/components/learning/StatBadge";
 
 export const Route = createFileRoute("/")({
   component: Index,
+  head: () => ({
+    meta: [
+      { title: "Memory Engine — Arabic Learning Dashboard" },
+      {
+        name: "description",
+        content:
+          "Learn 200 Arabic words with a Half-Life Regression spaced repetition engine. Track stability tiers, retention forecasts, and practice with smart flashcards.",
+      },
+    ],
+  }),
 });
 
-// IMPORTANT: Replace this placeholder. For sites with multiple pages (About, Services, Contact, etc.),
-// create separate route files (about.tsx, services.tsx, contact.tsx) — don't put all pages in this file.
-function PlaceholderIndex() {
-  return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
-    </div>
-  );
-}
+type Mode = "learning" | "practice";
 
 function Index() {
-  return <PlaceholderIndex />;
+  const [vocab, setVocab] = useState<Word[]>(() => buildInitialVocab());
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const [mode, setMode] = useState<Mode>("learning");
+  const [answer, setAnswer] = useState("");
+  const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
+  const [, forceTick] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Re-render every 30s so recall % decays visually.
+  useEffect(() => {
+    const id = setInterval(() => forceTick((t) => t + 1), 30000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    if (mode === "practice") inputRef.current?.focus();
+  }, [mode, currentIdx]);
+
+  const stats = useMemo(() => {
+    const learned = vocab.filter((w) => w.learned);
+    const tiers = { expert: 0, strong: 0, focus: 0 };
+    let avgP = 0;
+    const now = Date.now() / 1000;
+    for (const w of learned) {
+      const t = getTier(w.h);
+      if (t.key === "EXPERT") tiers.expert++;
+      if (t.key === "VERY STRONG" || t.key === "STRONG") tiers.strong++;
+      if (t.key === "FOCUS" || t.key === "VERY WEAK") tiers.focus++;
+      avgP += getRecallProbability(w, now);
+    }
+    return {
+      learnedCount: learned.length,
+      total: vocab.length,
+      avgRecall: learned.length === 0 ? 0 : Math.round((avgP / learned.length) * 100),
+      ...tiers,
+    };
+  }, [vocab, currentIdx]);
+
+  const word = vocab[currentIdx];
+
+  function nextLearningWord() {
+    setCurrentIdx((i) => (i + 1) % vocab.length);
+  }
+
+  function nextPracticeWord(updated: Word[]) {
+    const idx = pickPracticeIndex(updated, currentIdx);
+    if (idx === -1) {
+      setMode("learning");
+      return;
+    }
+    setCurrentIdx(idx);
+    setAnswer("");
+  }
+
+  function handleAction() {
+    if (mode === "learning") {
+      const updated = [...vocab];
+      updated[currentIdx] = markLearned(updated[currentIdx]);
+      setVocab(updated);
+      nextLearningWord();
+    } else {
+      const correct = normalizeAnswer(answer) === normalizeAnswer(word.known);
+      setFeedback(correct ? "correct" : "incorrect");
+      const updated = [...vocab];
+      updated[currentIdx] = applyPracticeResult(updated[currentIdx], correct);
+      setVocab(updated);
+      window.setTimeout(() => {
+        setFeedback(null);
+        nextPracticeWord(updated);
+      }, 700);
+    }
+  }
+
+  function toggleMode() {
+    const next: Mode = mode === "learning" ? "practice" : "learning";
+    setMode(next);
+    setAnswer("");
+    setFeedback(null);
+    if (next === "practice") {
+      const idx = pickPracticeIndex(vocab, -1);
+      if (idx === -1) {
+        setMode("learning");
+        return;
+      }
+      setCurrentIdx(idx);
+    } else {
+      setCurrentIdx(0);
+    }
+  }
+
+  function resetProgress() {
+    if (!window.confirm("Reset all learning progress?")) return;
+    setVocab(buildInitialVocab());
+    setCurrentIdx(0);
+    setMode("learning");
+    setAnswer("");
+  }
+
+  const progressPct = Math.round((stats.learnedCount / stats.total) * 100);
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
+        {/* Header */}
+        <header className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              Half-Life Regression Engine v4.0
+            </div>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Arabic <span className="text-primary">Memory Engine</span>
+            </h1>
+            <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
+              Learn 200 essential Arabic words with adaptive spaced repetition. Each word's
+              half-life evolves with your performance.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={resetProgress}
+              className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              Reset
+            </button>
+          </div>
+        </header>
+
+        {/* Stats */}
+        <section className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <StatCard
+            label="Words Unlocked"
+            value={`${stats.learnedCount}/${stats.total}`}
+            hint={`${progressPct}% of vocabulary`}
+          />
+          <StatCard label="Avg Recall" value={`${stats.avgRecall}%`} accent="strong" hint="Across learned words" />
+          <StatCard label="Expert Tier" value={stats.expert} accent="expert" hint="Half-life ≥ 30 days" />
+          <StatCard label="Need Focus" value={stats.focus} accent="focus" hint="Half-life < 0.5 days" />
+        </section>
+
+        {/* Progress bar */}
+        <div className="mb-10">
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Overall Progress</span>
+            <span className="font-mono">{progressPct}%</span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-muted">
+            <motion.div
+              className="h-full bg-[image:var(--gradient-primary)]"
+              initial={false}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ type: "spring", stiffness: 120, damping: 20 }}
+            />
+          </div>
+        </div>
+
+        {/* Practice + chart */}
+        <section className="mb-10 grid gap-6 lg:grid-cols-5">
+          <div className="lg:col-span-3">
+            {/* Mode toggle */}
+            <div className="mb-4 inline-flex rounded-xl border border-border bg-card/60 p-1 backdrop-blur-sm">
+              {(["learning", "practice"] as const).map((m) => (
+                <button
+                  key={m}
+                  onClick={() => mode !== m && toggleMode()}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
+                    mode === m
+                      ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {m === "learning" ? <GraduationCap className="h-4 w-4" /> : <Target className="h-4 w-4" />}
+                  {m === "learning" ? "Learn" : "Practice"}
+                </button>
+              ))}
+            </div>
+
+            <Flashcard word={word} showTranslation={mode === "learning"} feedback={feedback} />
+
+            {/* Action area */}
+            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+              {mode === "practice" && (
+                <input
+                  ref={inputRef}
+                  value={answer}
+                  onChange={(e) => setAnswer(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAction()}
+                  placeholder="Type the English translation…"
+                  className="flex-1 rounded-xl border border-border bg-card/60 px-4 py-3 text-base text-foreground placeholder:text-muted-foreground/60 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/30"
+                />
+              )}
+              <button
+                onClick={handleAction}
+                disabled={mode === "practice" && answer.trim().length === 0}
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
+              >
+                {mode === "learning" ? "Mark as Learned" : "Verify"}
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+              <Brain className="h-3.5 w-3.5" />
+              {mode === "learning"
+                ? "Browse new vocabulary. Mark words as learned to add them to your practice queue."
+                : "The engine picks the word with the lowest predicted recall."}
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <RetentionGraph vocab={vocab} />
+          </div>
+        </section>
+
+        {/* Stats table */}
+        <section className="mb-12">
+          <StatsTable vocab={vocab} />
+        </section>
+
+        <footer className="border-t border-border/60 pt-6 text-center text-xs text-muted-foreground">
+          Memory Engine v4.0 — Powered by Half-Life Regression
+        </footer>
+      </div>
+    </main>
+  );
 }

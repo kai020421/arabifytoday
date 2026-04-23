@@ -29,19 +29,26 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Memory Engine — Arabic Learning" },
+      { name: "description", content: "Adaptive Arabic learning dashboard with HLR spaced repetition." },
+      { name: "author", content: "Memory Engine" },
+      { property: "og:title", content: "Memory Engine — Arabic Learning" },
+      { property: "og:description", content: "Adaptive Arabic learning dashboard with HLR spaced repetition." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
       {
         rel: "stylesheet",
         href: appCss,
+      },
+      {
+        rel: "preconnect",
+        href: "https://fonts.googleapis.com",
+      },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@500;700&display=swap",
       },
     ],
   }),
