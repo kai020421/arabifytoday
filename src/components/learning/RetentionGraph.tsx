@@ -67,7 +67,7 @@ export function RetentionGraph({ vocab, days = 30 }: Props) {
                 color: "oklch(0.97 0.01 250)",
               }}
               labelFormatter={(v) => `Day ${Number(v).toFixed(1)}`}
-              formatter={(v: number) => [`${v}%`, "Avg recall"]}
+              formatter={(v) => [`${v}%`, "Avg recall"]}
             />
             <ReferenceLine y={50} stroke="oklch(0.65 0.22 25)" strokeDasharray="4 4" strokeOpacity={0.5} />
             <Area
