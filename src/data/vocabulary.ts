@@ -206,6 +206,7 @@ export const RAW_VOCABULARY: RawWord[] = [
   { target: "استدامة", known: "Sustainability", level: "Advanced" },
   { target: "كفاءة", known: "Efficiency", level: "Advanced" },
   { target: "جودة", known: "Quality", level: "Advanced" },
+  { target: "معيار", known: "Standard", level: "Advanced" },
   { target: "إنتاج", known: "Production", level: "Advanced" },
   { target: "استهلاك", known: "Consumption", level: "Advanced" },
   { target: "توزيع", known: "Distribution", level: "Advanced" },
