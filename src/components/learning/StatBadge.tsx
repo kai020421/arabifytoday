@@ -32,21 +32,62 @@ export function StatCard({ label, value, hint, accent = "primary", className }: 
 
 import type { Tier } from "@/lib/memory-engine";
 
+const TIER_STYLES: Record<string, { text: string; bg: string; border: string; dot: string }> = {
+  "tier-expert": {
+    text: "text-[oklch(0.7_0.21_305)]",
+    bg: "bg-[oklch(0.7_0.21_305/0.12)]",
+    border: "border-[oklch(0.7_0.21_305/0.35)]",
+    dot: "bg-[oklch(0.7_0.21_305)]",
+  },
+  "tier-very-strong": {
+    text: "text-[oklch(0.72_0.19_145)]",
+    bg: "bg-[oklch(0.72_0.19_145/0.12)]",
+    border: "border-[oklch(0.72_0.19_145/0.35)]",
+    dot: "bg-[oklch(0.72_0.19_145)]",
+  },
+  "tier-strong": {
+    text: "text-[oklch(0.78_0.2_130)]",
+    bg: "bg-[oklch(0.78_0.2_130/0.12)]",
+    border: "border-[oklch(0.78_0.2_130/0.35)]",
+    dot: "bg-[oklch(0.78_0.2_130)]",
+  },
+  "tier-weak": {
+    text: "text-[oklch(0.82_0.17_90)]",
+    bg: "bg-[oklch(0.82_0.17_90/0.12)]",
+    border: "border-[oklch(0.82_0.17_90/0.35)]",
+    dot: "bg-[oklch(0.82_0.17_90)]",
+  },
+  "tier-very-weak": {
+    text: "text-[oklch(0.72_0.19_50)]",
+    bg: "bg-[oklch(0.72_0.19_50/0.12)]",
+    border: "border-[oklch(0.72_0.19_50/0.35)]",
+    dot: "bg-[oklch(0.72_0.19_50)]",
+  },
+  "tier-focus": {
+    text: "text-[oklch(0.65_0.22_25)]",
+    bg: "bg-[oklch(0.65_0.22_25/0.12)]",
+    border: "border-[oklch(0.65_0.22_25/0.35)]",
+    dot: "bg-[oklch(0.65_0.22_25)]",
+  },
+};
+
+export function getTierStyle(colorVar: string) {
+  return TIER_STYLES[colorVar] ?? TIER_STYLES["tier-focus"];
+}
+
 export function TierBadge({ tier, compact = false }: { tier: Tier; compact?: boolean }) {
-  const colorClass = `text-${tier.colorVar}`;
-  const bgClass = `bg-${tier.colorVar}/10`;
-  const borderClass = `border-${tier.colorVar}/30`;
+  const s = getTierStyle(tier.colorVar);
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 font-semibold uppercase tracking-wider",
         compact ? "text-[10px]" : "text-xs",
-        colorClass,
-        bgClass,
-        borderClass
+        s.text,
+        s.bg,
+        s.border
       )}
     >
-      <span className={cn("h-1.5 w-1.5 rounded-full", `bg-${tier.colorVar}`)} />
+      <span className={cn("h-1.5 w-1.5 rounded-full", s.dot)} />
       {tier.label}
     </span>
   );
