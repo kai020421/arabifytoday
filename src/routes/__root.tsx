@@ -29,13 +29,17 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Memory Engine — Arabic Learning" },
-      { name: "description", content: "Adaptive Arabic learning dashboard with HLR spaced repetition." },
+      { title: "Arabify — Adaptive HLR Learning" },
+      { name: "description", content: "Master Arabic vocabulary with a personalized Memory Engine. Powered by Half-Life Regression (HLR) to optimize your recall and stability tiers." },
       { name: "author", content: "Memory Engine" },
-      { property: "og:title", content: "Memory Engine — Arabic Learning" },
-      { property: "og:description", content: "Adaptive Arabic learning dashboard with HLR spaced repetition." },
+      { property: "og:title", content: "Arabify — Adaptive HLR Learning" },
+      { property: "og:description", content: "Master Arabic vocabulary with a personalized Memory Engine. Powered by Half-Life Regression (HLR) to optimize your recall and stability tiers." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Arabify — Adaptive HLR Learning" },
+      { name: "twitter:description", content: "Master Arabic vocabulary with a personalized Memory Engine. Powered by Half-Life Regression (HLR) to optimize your recall and stability tiers." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8a4c6356-8aa1-4dba-8d31-7be6a51d31ce/id-preview-965ae31d--a97f1949-244c-4215-ab78-ae8b88e3af37.lovable.app-1776924646987.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/8a4c6356-8aa1-4dba-8d31-7be6a51d31ce/id-preview-965ae31d--a97f1949-244c-4215-ab78-ae8b88e3af37.lovable.app-1776924646987.png" },
     ],
     links: [
       {
