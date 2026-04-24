@@ -1,14 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw } from "lucide-react";
+import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw, Keyboard, ListChecks, SquarePen, ToggleLeft } from "lucide-react";
 import {
   applyPracticeResult,
   buildInitialVocab,
   getRecallProbability,
   getTier,
   markLearned,
-  normalizeAnswer,
   pickPracticeIndex,
   type Word,
 } from "@/lib/memory-engine";
@@ -16,6 +15,8 @@ import { Flashcard } from "@/components/learning/Flashcard";
 import { RetentionGraph } from "@/components/learning/RetentionGraph";
 import { StatsTable } from "@/components/learning/StatsTable";
 import { StatCard } from "@/components/learning/StatBadge";
+import { PracticePanel } from "@/components/learning/PracticePanel";
+import type { QuizKind } from "@/lib/quiz";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -37,20 +38,16 @@ function Index() {
   const [vocab, setVocab] = useState<Word[]>(() => buildInitialVocab());
   const [currentIdx, setCurrentIdx] = useState(0);
   const [mode, setMode] = useState<Mode>("learning");
-  const [answer, setAnswer] = useState("");
+  const [quizKind, setQuizKind] = useState<QuizKind>("typing");
+  const [questionSeed, setQuestionSeed] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [, forceTick] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Re-render every 30s so recall % decays visually.
   useEffect(() => {
     const id = setInterval(() => forceTick((t) => t + 1), 30000);
     return () => clearInterval(id);
   }, []);
-
-  useEffect(() => {
-    if (mode === "practice") inputRef.current?.focus();
-  }, [mode, currentIdx]);
 
   const stats = useMemo(() => {
     const learned = vocab.filter((w) => w.learned);
@@ -85,32 +82,30 @@ function Index() {
       return;
     }
     setCurrentIdx(idx);
-    setAnswer("");
+    setQuestionSeed((s) => s + 1);
   }
 
-  function handleAction() {
-    if (mode === "learning") {
-      const updated = [...vocab];
-      updated[currentIdx] = markLearned(updated[currentIdx]);
-      setVocab(updated);
-      nextLearningWord();
-    } else {
-      const correct = normalizeAnswer(answer) === normalizeAnswer(word.known);
-      setFeedback(correct ? "correct" : "incorrect");
-      const updated = [...vocab];
-      updated[currentIdx] = applyPracticeResult(updated[currentIdx], correct);
-      setVocab(updated);
-      window.setTimeout(() => {
-        setFeedback(null);
-        nextPracticeWord(updated);
-      }, 700);
-    }
+  function handleLearned() {
+    const updated = [...vocab];
+    updated[currentIdx] = markLearned(updated[currentIdx]);
+    setVocab(updated);
+    nextLearningWord();
+  }
+
+  function handlePracticeAnswer(correct: boolean) {
+    setFeedback(correct ? "correct" : "incorrect");
+    const updated = [...vocab];
+    updated[currentIdx] = applyPracticeResult(updated[currentIdx], correct);
+    setVocab(updated);
+    window.setTimeout(() => {
+      setFeedback(null);
+      nextPracticeWord(updated);
+    }, 900);
   }
 
   function toggleMode() {
     const next: Mode = mode === "learning" ? "practice" : "learning";
     setMode(next);
-    setAnswer("");
     setFeedback(null);
     if (next === "practice") {
       const idx = pickPracticeIndex(vocab, -1);
@@ -119,6 +114,7 @@ function Index() {
         return;
       }
       setCurrentIdx(idx);
+      setQuestionSeed((s) => s + 1);
     } else {
       setCurrentIdx(0);
     }
@@ -129,7 +125,6 @@ function Index() {
     setVocab(buildInitialVocab());
     setCurrentIdx(0);
     setMode("learning");
-    setAnswer("");
   }
 
   const progressPct = Math.round((stats.learnedCount / stats.total) * 100);
@@ -215,25 +210,56 @@ function Index() {
             <Flashcard word={word} showTranslation={mode === "learning"} feedback={feedback} />
 
             {/* Action area */}
-            <div className="mt-4 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-4 space-y-3">
               {mode === "practice" && (
-                <input
-                  ref={inputRef}
-                  value={answer}
-                  onChange={(e) => setAnswer(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAction()}
-                  placeholder="Type the English translation…"
-                  className="flex-1 rounded-xl border border-border bg-card/60 px-4 py-3 text-base text-foreground placeholder:text-muted-foreground/60 outline-none transition-all focus:border-primary/60 focus:ring-2 focus:ring-primary/30"
+                <div className="flex flex-wrap gap-1.5">
+                  {(
+                    [
+                      { k: "typing", label: "Typing", Icon: Keyboard },
+                      { k: "mcq", label: "MCQ", Icon: ListChecks },
+                      { k: "fillblank", label: "Fill Blank", Icon: SquarePen },
+                      { k: "truefalse", label: "True / False", Icon: ToggleLeft },
+                    ] as const
+                  ).map(({ k, label, Icon }) => (
+                    <button
+                      key={k}
+                      onClick={() => {
+                        if (quizKind === k) return;
+                        setQuizKind(k);
+                        setFeedback(null);
+                        setQuestionSeed((s) => s + 1);
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                        quizKind === k
+                          ? "border-primary/60 bg-primary/10 text-primary"
+                          : "border-border bg-card/60 text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {mode === "learning" ? (
+                <button
+                  onClick={handleLearned}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-all hover:brightness-110 active:scale-[0.98]"
+                >
+                  Mark as Learned
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <PracticePanel
+                  word={word}
+                  vocab={vocab}
+                  kind={quizKind}
+                  resetKey={`${currentIdx}-${quizKind}-${questionSeed}`}
+                  onAnswer={handlePracticeAnswer}
+                  feedback={feedback}
                 />
               )}
-              <button
-                onClick={handleAction}
-                disabled={mode === "practice" && answer.trim().length === 0}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-all hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none"
-              >
-                {mode === "learning" ? "Mark as Learned" : "Verify"}
-                <ArrowRight className="h-4 w-4" />
-              </button>
             </div>
 
             <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
