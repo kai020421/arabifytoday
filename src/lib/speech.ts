@@ -28,14 +28,26 @@ function pickArabicVoice(): SpeechSynthesisVoice | null {
 export function speakArabic(text: string, rate = 0.85): void {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const synth = window.speechSynthesis;
-  synth.cancel();
+  // CRITICAL: build the utterance synchronously inside the user gesture so
+  // browsers (esp. Safari/iOS) allow it. Avoid awaiting before .speak().
   const utter = new SpeechSynthesisUtterance(text);
   utter.lang = "ar-SA";
   utter.rate = rate;
   utter.pitch = 1;
   const voice = pickArabicVoice();
   if (voice) utter.voice = voice;
+
+  // Some browsers get stuck in a "paused" state — make sure we resume.
+  try {
+    if (synth.speaking || synth.pending) synth.cancel();
+  } catch {
+    /* ignore */
+  }
+  // Defer slightly so cancel() finishes flushing the queue first.
+  // Using a microtask-ish delay keeps us within the gesture window.
   synth.speak(utter);
+  // Workaround: Chrome sometimes pauses synthesis after cancel(); resume.
+  if (synth.paused) synth.resume();
 }
 
 export function isSpeechSupported(): boolean {
@@ -44,8 +56,10 @@ export function isSpeechSupported(): boolean {
 
 // Warm up voice list on load (some browsers populate asynchronously)
 if (typeof window !== "undefined" && "speechSynthesis" in window) {
-  window.speechSynthesis.onvoiceschanged = () => {
+  // Trigger initial load (some browsers need this kick)
+  window.speechSynthesis.getVoices();
+  window.speechSynthesis.addEventListener?.("voiceschanged", () => {
     cachedVoice = undefined;
     pickArabicVoice();
-  };
+  });
 }

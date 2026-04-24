@@ -1,6 +1,17 @@
 import type { Word } from "./memory-engine";
 
-export type QuizKind = "typing" | "mcq" | "fillblank" | "truefalse";
+export type QuizKind = "typing" | "mcq" | "fillblank" | "truefalse" | "random";
+
+/** The actual question kinds that can be rendered (no "random", no "typing"). */
+export type RenderableQuizKind = "mcq" | "fillblank" | "truefalse";
+
+const RANDOM_POOL: RenderableQuizKind[] = ["mcq", "fillblank", "truefalse"];
+
+export function pickRandomQuizKind(prev?: RenderableQuizKind): RenderableQuizKind {
+  // Avoid repeating the same kind twice in a row when possible
+  const pool = prev ? RANDOM_POOL.filter((k) => k !== prev) : RANDOM_POOL;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 
 export interface MCQQuestion {
   kind: "mcq";
