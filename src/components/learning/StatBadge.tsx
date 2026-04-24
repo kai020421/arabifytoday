@@ -18,11 +18,17 @@ export function StatCard({ label, value, hint, accent = "primary", className }: 
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-border/60 bg-card/60 p-5 backdrop-blur-sm",
-        "shadow-[0_4px_20px_-8px_rgba(0,0,0,0.4)] transition-all hover:border-border",
+        "group relative overflow-hidden rounded-2xl border border-white/10 p-5",
+        "bg-[linear-gradient(135deg,oklch(1_0_0/0.06),oklch(1_0_0/0.02))]",
+        "backdrop-blur-xl backdrop-saturate-150",
+        "shadow-[0_8px_32px_-12px_oklch(0.1_0.02_260/0.6),inset_0_1px_0_0_oklch(1_0_0/0.08)]",
+        "transition-all hover:border-white/20 hover:shadow-[0_12px_40px_-12px_oklch(0.75_0.16_230/0.25),inset_0_1px_0_0_oklch(1_0_0/0.12)]",
         className
       )}
     >
+      <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100"
+        style={{ background: "radial-gradient(circle at 30% 0%, oklch(0.75 0.16 230 / 0.12), transparent 60%)" }}
+      />
       <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{label}</div>
       <div className={cn("mt-2 text-3xl font-bold tabular-nums", accentMap[accent])}>{value}</div>
       {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}

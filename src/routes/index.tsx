@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw, Keyboard, ListChecks, SquarePen, ToggleLeft, Shuffle } from "lucide-react";
 import {
   applyPracticeResult,
@@ -17,6 +17,7 @@ import { StatsTable } from "@/components/learning/StatsTable";
 import { StatCard } from "@/components/learning/StatBadge";
 import { PracticePanel } from "@/components/learning/PracticePanel";
 import type { QuizKind } from "@/lib/quiz";
+import { pickFeedbackPhrase } from "@/lib/feedback";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -41,6 +42,7 @@ function Index() {
   const [quizKind, setQuizKind] = useState<QuizKind>("random");
   const [questionSeed, setQuestionSeed] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
+  const [feedbackPhrase, setFeedbackPhrase] = useState<string>("");
   const [, forceTick] = useState(0);
 
   // Re-render every 30s so recall % decays visually.
@@ -94,11 +96,13 @@ function Index() {
 
   function handlePracticeAnswer(correct: boolean) {
     setFeedback(correct ? "correct" : "incorrect");
+    setFeedbackPhrase(pickFeedbackPhrase(correct));
     const updated = [...vocab];
     updated[currentIdx] = applyPracticeResult(updated[currentIdx], correct);
     setVocab(updated);
     window.setTimeout(() => {
       setFeedback(null);
+      setFeedbackPhrase("");
       nextPracticeWord(updated);
     }, 900);
   }
@@ -261,6 +265,25 @@ function Index() {
                   feedback={feedback}
                 />
               )}
+
+              <AnimatePresence>
+                {mode === "practice" && feedback && feedbackPhrase && (
+                  <motion.div
+                    key={feedbackPhrase}
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                    className={`mt-1 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium backdrop-blur-sm ${
+                      feedback === "correct"
+                        ? "border-[oklch(0.72_0.19_145/0.4)] bg-[oklch(0.72_0.19_145/0.12)] text-[oklch(0.82_0.18_145)]"
+                        : "border-[oklch(0.65_0.22_25/0.4)] bg-[oklch(0.65_0.22_25/0.12)] text-[oklch(0.78_0.18_30)]"
+                    }`}
+                  >
+                    {feedback === "correct" ? "✨" : "🌱"} {feedbackPhrase}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">

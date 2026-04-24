@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import { Volume2 } from "lucide-react";
 import type { Word } from "@/lib/memory-engine";
 import { getTier } from "@/lib/memory-engine";
@@ -20,8 +21,28 @@ export function Flashcard({ word, showTranslation, feedback }: FlashcardProps) {
         ? "ring-2 ring-[oklch(0.65_0.22_25)] shadow-[0_0_60px_-10px_oklch(0.65_0.22_25/0.5)]"
         : "shadow-[var(--shadow-elegant)]";
 
+  // Detect tier promotions/demotions to fire a soft pulse on the card.
+  const prevTierRef = useRef(tier.key);
+  const [tierPulse, setTierPulse] = useState(false);
+  useEffect(() => {
+    if (prevTierRef.current !== tier.key && prevTierRef.current !== undefined) {
+      setTierPulse(true);
+      const t = window.setTimeout(() => setTierPulse(false), 900);
+      return () => window.clearTimeout(t);
+    }
+    prevTierRef.current = tier.key;
+  }, [tier.key]);
+
   return (
-    <div className={`relative overflow-hidden rounded-3xl border border-border/60 bg-[image:var(--gradient-card)] p-8 sm:p-12 transition-all ${ringClass}`}>
+    <motion.div
+      animate={tierPulse ? { scale: [1, 1.025, 1], boxShadow: [
+        "0 10px 40px -10px oklch(0.1 0.02 260 / 0.6)",
+        `0 0 80px -10px ${tier.colorVar === "tier-focus" ? "oklch(0.65 0.22 25 / 0.55)" : "oklch(0.72 0.19 145 / 0.55)"}`,
+        "0 10px 40px -10px oklch(0.1 0.02 260 / 0.6)",
+      ] } : { scale: 1 }}
+      transition={{ duration: 0.9, ease: "easeOut" }}
+      className={`relative overflow-hidden rounded-3xl border border-border/60 bg-[image:var(--gradient-card)] p-8 sm:p-12 transition-colors ${ringClass}`}
+    >
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
       <div className="flex items-center justify-between gap-3">
         <span className="rounded-full border border-border/60 bg-background/40 px-3 py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
@@ -33,10 +54,10 @@ export function Flashcard({ word, showTranslation, feedback }: FlashcardProps) {
       <AnimatePresence mode="wait">
         <motion.div
           key={word.id}
-          initial={{ opacity: 0, y: 20, scale: 0.96 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -20, scale: 0.96 }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          initial={{ opacity: 0, x: 60, scale: 0.96 }}
+          animate={{ opacity: 1, x: 0, scale: 1 }}
+          exit={{ opacity: 0, x: -60, scale: 0.96 }}
+          transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="flex flex-col items-center justify-center gap-6 py-10 sm:py-14"
         >
           <div
@@ -90,6 +111,6 @@ export function Flashcard({ word, showTranslation, feedback }: FlashcardProps) {
           </span>
         </span>
       </div>
-    </div>
+    </motion.div>
   );
 }
