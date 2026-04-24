@@ -67,7 +67,7 @@ export function StatsTable({ vocab }: { vocab: Word[] }) {
               return (
                 <tr key={w.id} className="border-t border-border/40 transition-colors hover:bg-accent/40">
                   <td className="px-5 py-3">
-                    <span dir="rtl" lang="ar" className="text-lg font-bold text-primary">
+                    <span dir="rtl" lang="ar" className="text-lg font-bold text-primary text-teal-200">
                       {w.target}
                     </span>
                   </td>

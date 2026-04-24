@@ -58,7 +58,7 @@ export function Flashcard({ word, showTranslation, feedback }: FlashcardProps) {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           exit={{ opacity: 0, x: -60, scale: 0.96 }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
-          className="flex flex-col items-center justify-center gap-6 py-10 sm:py-14"
+          className="flex flex-col items-center justify-center gap-6 py-10 sm:py-14 bg-slate-800"
         >
           <div
             dir="rtl"
