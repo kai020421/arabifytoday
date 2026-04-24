@@ -9,7 +9,9 @@ import {
   type MCQQuestion,
   type Question,
   type QuizKind,
+  type RenderableQuizKind,
   type TrueFalseQuestion,
+  pickRandomQuizKind,
 } from "@/lib/quiz";
 
 interface PracticePanelProps {
@@ -26,18 +28,28 @@ export function PracticePanel({ word, vocab, kind, resetKey, onAnswer, feedback 
   const [typed, setTyped] = useState("");
   const [picked, setPicked] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const lastRandomRef = useRef<RenderableQuizKind | undefined>(undefined);
+
+  // When kind === "random", lock in a randomly-picked sub-kind for this question.
+  const effectiveKind = useMemo<QuizKind>(() => {
+    if (kind !== "random") return kind;
+    const next = pickRandomQuizKind(lastRandomRef.current);
+    lastRandomRef.current = next;
+    return next;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey, kind]);
 
   const question = useMemo<Question | null>(() => {
-    if (kind === "typing") return null;
-    return buildQuestion(kind, word, vocab);
+    if (effectiveKind === "typing" || effectiveKind === "random") return null;
+    return buildQuestion(effectiveKind, word, vocab);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetKey]);
+  }, [resetKey, effectiveKind]);
 
   useEffect(() => {
     setTyped("");
     setPicked(null);
-    if (kind === "typing" || kind === "fillblank") inputRef.current?.focus();
-  }, [resetKey, kind]);
+    if (effectiveKind === "typing" || effectiveKind === "fillblank") inputRef.current?.focus();
+  }, [resetKey, effectiveKind]);
 
   function submitTyping() {
     if (typed.trim().length === 0 || feedback) return;
@@ -64,7 +76,7 @@ export function PracticePanel({ word, vocab, kind, resetKey, onAnswer, feedback 
     onAnswer(answer === q.isTrue);
   }
 
-  if (kind === "typing") {
+  if (effectiveKind === "typing") {
     return (
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
