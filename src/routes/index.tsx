@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw, Keyboard, ListChecks, SquarePen, ToggleLeft } from "lucide-react";
+import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw, Keyboard, ListChecks, SquarePen, ToggleLeft, Shuffle } from "lucide-react";
 import {
   applyPracticeResult,
   buildInitialVocab,
@@ -38,7 +38,7 @@ function Index() {
   const [vocab, setVocab] = useState<Word[]>(() => buildInitialVocab());
   const [currentIdx, setCurrentIdx] = useState(0);
   const [mode, setMode] = useState<Mode>("learning");
-  const [quizKind, setQuizKind] = useState<QuizKind>("typing");
+  const [quizKind, setQuizKind] = useState<QuizKind>("random");
   const [questionSeed, setQuestionSeed] = useState(0);
   const [feedback, setFeedback] = useState<"correct" | "incorrect" | null>(null);
   const [, forceTick] = useState(0);
@@ -215,6 +215,7 @@ function Index() {
                 <div className="flex flex-wrap gap-1.5">
                   {(
                     [
+                      { k: "random", label: "Random Mix", Icon: Shuffle },
                       { k: "typing", label: "Typing", Icon: Keyboard },
                       { k: "mcq", label: "MCQ", Icon: ListChecks },
                       { k: "fillblank", label: "Fill Blank", Icon: SquarePen },
