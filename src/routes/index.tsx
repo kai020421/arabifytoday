@@ -144,7 +144,7 @@ function Index() {
               Half-Life Regression Engine v4.0
             </div>
             <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Arabic <span className="text-primary">Memory Engine</span>
+              <span className="text-primary">ArabifyToday</span>
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground sm:text-base">
               Learn 200 essential Arabic words with adaptive spaced repetition. Each word's
