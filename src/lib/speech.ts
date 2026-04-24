@@ -1,52 +1,58 @@
 /**
  * Web Speech API helper for Arabic pronunciation.
- * Picks the best available Arabic voice and falls back gracefully.
+ *
+ * Picks the best available Arabic voice (prefers Google Arabic / Microsoft
+ * Naayf) and is careful to keep speak() inside the user gesture so iOS,
+ * Safari and Chrome all play audio reliably.
  */
 
-let cachedVoice: SpeechSynthesisVoice | null | undefined;
+let cachedVoices: SpeechSynthesisVoice[] = [];
+let cachedVoice: SpeechSynthesisVoice | null = null;
 
-function pickArabicVoice(): SpeechSynthesisVoice | null {
-  if (cachedVoice !== undefined) return cachedVoice;
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-    cachedVoice = null;
-    return null;
-  }
+function loadVoices(): void {
+  if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const voices = window.speechSynthesis.getVoices();
+  if (voices.length === 0) return;
+  cachedVoices = voices;
+
   const arabic = voices.filter((v) => v.lang?.toLowerCase().startsWith("ar"));
-  if (arabic.length === 0) {
-    // voices may not be loaded yet — don't cache null in that case
-    return null;
-  }
-  // Prefer Saudi, then Egyptian, then any Arabic
+  // Priority: Google Arabic → Microsoft Naayf → ar-SA → ar-EG → any Arabic → null
   cachedVoice =
+    voices.find((v) => /google.*arabic/i.test(v.name)) ??
+    voices.find((v) => /naayf/i.test(v.name)) ??
+    voices.find((v) => /microsoft.*ar/i.test(v.name)) ??
     arabic.find((v) => v.lang.toLowerCase() === "ar-sa") ??
     arabic.find((v) => v.lang.toLowerCase() === "ar-eg") ??
-    arabic[0];
-  return cachedVoice;
+    arabic[0] ??
+    null;
 }
 
 export function speakArabic(text: string, rate = 0.85): void {
   if (typeof window === "undefined" || !("speechSynthesis" in window)) return;
   const synth = window.speechSynthesis;
-  // CRITICAL: build the utterance synchronously inside the user gesture so
-  // browsers (esp. Safari/iOS) allow it. Avoid awaiting before .speak().
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = "ar-SA";
-  utter.rate = rate;
-  utter.pitch = 1;
-  const voice = pickArabicVoice();
-  if (voice) utter.voice = voice;
 
-  // Some browsers get stuck in a "paused" state — make sure we resume.
+  // Refresh voice list if it wasn't ready on initial load.
+  if (cachedVoices.length === 0) loadVoices();
+
+  // CRITICAL: build the utterance synchronously inside the user gesture.
+  // Always cancel() first to clear any queued/stuck utterances.
   try {
-    if (synth.speaking || synth.pending) synth.cancel();
+    synth.cancel();
   } catch {
     /* ignore */
   }
-  // Defer slightly so cancel() finishes flushing the queue first.
-  // Using a microtask-ish delay keeps us within the gesture window.
+
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = "ar-SA";
+  utter.rate = rate;
+  utter.pitch = 1.0;
+  utter.volume = 1.0;
+  if (cachedVoice) utter.voice = cachedVoice;
+
+  // Speak immediately — staying inside the click handler keeps iOS/Safari happy.
   synth.speak(utter);
-  // Workaround: Chrome sometimes pauses synthesis after cancel(); resume.
+
+  // Chrome occasionally enters a paused state after cancel(); kick it.
   if (synth.paused) synth.resume();
 }
 
@@ -54,12 +60,8 @@ export function isSpeechSupported(): boolean {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-// Warm up voice list on load (some browsers populate asynchronously)
+// Warm up voice list on module load (browsers populate asynchronously).
 if (typeof window !== "undefined" && "speechSynthesis" in window) {
-  // Trigger initial load (some browsers need this kick)
-  window.speechSynthesis.getVoices();
-  window.speechSynthesis.addEventListener?.("voiceschanged", () => {
-    cachedVoice = undefined;
-    pickArabicVoice();
-  });
+  loadVoices();
+  window.speechSynthesis.addEventListener?.("voiceschanged", loadVoices);
 }
