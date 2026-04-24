@@ -1,7 +1,9 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { Volume2 } from "lucide-react";
 import type { Word } from "@/lib/memory-engine";
 import { getTier } from "@/lib/memory-engine";
 import { TierBadge } from "./StatBadge";
+import { speakArabic } from "@/lib/speech";
 
 interface FlashcardProps {
   word: Word;
@@ -48,6 +50,19 @@ export function Flashcard({ word, showTranslation, feedback }: FlashcardProps) {
           >
             {word.target}
           </div>
+
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              speakArabic(word.target);
+            }}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-background/40 px-3 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur-sm transition-colors hover:border-primary/60 hover:text-primary"
+            aria-label={`Pronounce ${word.target}`}
+          >
+            <Volume2 className="h-3.5 w-3.5" />
+            Pronounce
+          </button>
 
           <AnimatePresence>
             {showTranslation && (
