@@ -64,35 +64,38 @@
 :root {
   --radius: 0.875rem;
 
-  /* Deep slate dark theme — used as default */
-  --background: oklch(0.18 0.02 260);
-  --foreground: oklch(0.97 0.01 250);
+  /* Deep slate / matte black engineering terminal theme */
+  /* #020617 ≈ oklch(0.16 0.02 260) */
+  --background: oklch(0.13 0.015 260);
+  --foreground: oklch(0.97 0.01 200);
 
-  --card: oklch(0.22 0.025 260);
-  --card-foreground: oklch(0.97 0.01 250);
+  --card: oklch(0.16 0.018 255);
+  --card-foreground: oklch(0.97 0.01 200);
 
-  --popover: oklch(0.22 0.025 260);
-  --popover-foreground: oklch(0.97 0.01 250);
+  --popover: oklch(0.16 0.018 255);
+  --popover-foreground: oklch(0.97 0.01 200);
 
-  --primary: oklch(0.75 0.16 230);
-  --primary-foreground: oklch(0.15 0.02 260);
-  --primary-glow: oklch(0.82 0.18 220);
+  /* Cyan primary to match the glowing Arabic text */
+  --primary: oklch(0.82 0.15 200);
+  --primary-foreground: oklch(0.13 0.015 260);
+  --primary-glow: oklch(0.88 0.16 195);
 
-  --secondary: oklch(0.28 0.03 260);
-  --secondary-foreground: oklch(0.97 0.01 250);
+  --secondary: oklch(0.22 0.02 250);
+  --secondary-foreground: oklch(0.97 0.01 200);
 
-  --muted: oklch(0.26 0.025 260);
-  --muted-foreground: oklch(0.7 0.02 255);
+  --muted: oklch(0.2 0.015 255);
+  --muted-foreground: oklch(0.7 0.025 210);
 
-  --accent: oklch(0.32 0.05 250);
-  --accent-foreground: oklch(0.97 0.01 250);
+  --accent: oklch(0.28 0.05 210);
+  --accent-foreground: oklch(0.97 0.01 200);
 
   --destructive: oklch(0.65 0.22 25);
   --destructive-foreground: oklch(0.98 0.01 250);
 
-  --border: oklch(0.32 0.03 260);
-  --input: oklch(0.28 0.03 260);
-  --ring: oklch(0.75 0.16 230);
+  /* Thin cyan borders for the engineering terminal feel */
+  --border: oklch(0.78 0.14 200 / 0.35);
+  --input: oklch(0.78 0.14 200 / 0.25);
+  --ring: oklch(0.82 0.15 200);
 
   /* Stability tier colors */
   --tier-expert: oklch(0.7 0.21 305);
@@ -102,27 +105,27 @@
   --tier-very-weak: oklch(0.72 0.19 50);
   --tier-focus: oklch(0.65 0.22 25);
 
-  --chart-1: oklch(0.75 0.16 230);
+  --chart-1: oklch(0.82 0.15 200);
   --chart-2: oklch(0.72 0.19 145);
   --chart-3: oklch(0.7 0.21 305);
   --chart-4: oklch(0.82 0.17 90);
   --chart-5: oklch(0.65 0.22 25);
 
-  --sidebar: oklch(0.2 0.025 260);
-  --sidebar-foreground: oklch(0.97 0.01 250);
-  --sidebar-primary: oklch(0.75 0.16 230);
-  --sidebar-primary-foreground: oklch(0.15 0.02 260);
-  --sidebar-accent: oklch(0.28 0.03 260);
-  --sidebar-accent-foreground: oklch(0.97 0.01 250);
-  --sidebar-border: oklch(0.32 0.03 260);
-  --sidebar-ring: oklch(0.75 0.16 230);
+  --sidebar: oklch(0.15 0.018 258);
+  --sidebar-foreground: oklch(0.97 0.01 200);
+  --sidebar-primary: oklch(0.82 0.15 200);
+  --sidebar-primary-foreground: oklch(0.13 0.015 260);
+  --sidebar-accent: oklch(0.22 0.02 250);
+  --sidebar-accent-foreground: oklch(0.97 0.01 200);
+  --sidebar-border: oklch(0.78 0.14 200 / 0.35);
+  --sidebar-ring: oklch(0.82 0.15 200);
 
-  --gradient-primary: linear-gradient(135deg, oklch(0.75 0.16 230), oklch(0.82 0.18 200));
-  --gradient-card: linear-gradient(135deg, oklch(0.24 0.03 260), oklch(0.2 0.025 265));
-  --gradient-glow: radial-gradient(circle at 50% 0%, oklch(0.75 0.16 230 / 0.15), transparent 70%);
+  --gradient-primary: linear-gradient(135deg, oklch(0.82 0.15 200), oklch(0.88 0.16 190));
+  --gradient-card: linear-gradient(135deg, oklch(0.17 0.02 258), oklch(0.13 0.015 262));
+  --gradient-glow: radial-gradient(circle at 50% 0%, oklch(0.82 0.15 200 / 0.12), transparent 70%);
 
-  --shadow-elegant: 0 10px 40px -10px oklch(0.1 0.02 260 / 0.6);
-  --shadow-glow: 0 0 60px -10px oklch(0.75 0.16 230 / 0.4);
+  --shadow-elegant: 0 10px 40px -10px oklch(0.05 0.01 260 / 0.8);
+  --shadow-glow: 0 0 60px -10px oklch(0.82 0.15 200 / 0.4);
 }
 
 .dark {
