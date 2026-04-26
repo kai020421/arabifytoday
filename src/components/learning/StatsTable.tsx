@@ -8,6 +8,7 @@ type SortKey = "tier" | "recall" | "h" | "level";
 export function StatsTable({ vocab }: { vocab: Word[] }) {
   const [filter, setFilter] = useState<"all" | "learned" | "unlearned">("all");
   const [sort, setSort] = useState<SortKey>("recall");
+  const [showAll, setShowAll] = useState(false);
 
   const rows = useMemo(() => {
     const now = Date.now() / 1000;
@@ -24,15 +25,19 @@ export function StatsTable({ vocab }: { vocab: Word[] }) {
       if (sort === "level") return a.w.level.localeCompare(b.w.level);
       return b.w.h - a.w.h;
     });
-    return list.slice(0, 60);
+    return list;
   }, [vocab, filter, sort]);
+
+  const visibleRows = showAll ? rows : rows.slice(0, 60);
 
   return (
     <div className="rounded-2xl border border-border/60 bg-card/60 backdrop-blur-sm">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
         <div>
           <h3 className="text-base font-semibold">Word Stability</h3>
-          <p className="text-xs text-muted-foreground">Showing top {rows.length} words</p>
+          <p className="text-xs text-muted-foreground">
+            Showing {visibleRows.length} of {rows.length} words
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <FilterButtons value={filter} onChange={setFilter} />
@@ -61,7 +66,7 @@ export function StatsTable({ vocab }: { vocab: Word[] }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ w, p, tier }) => {
+            {visibleRows.map(({ w, p, tier }) => {
               const pct = Math.round(p * 100);
               const lowRecall = pct < 50;
               return (
@@ -86,6 +91,16 @@ export function StatsTable({ vocab }: { vocab: Word[] }) {
           </tbody>
         </table>
       </div>
+      {rows.length > 60 && (
+        <div className="border-t border-border/60 px-5 py-3 text-center">
+          <button
+            onClick={() => setShowAll((v) => !v)}
+            className="rounded-lg border border-border bg-background/40 px-4 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+          >
+            {showAll ? "Show less" : `Show all ${rows.length} words`}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
