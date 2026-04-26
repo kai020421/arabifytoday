@@ -229,6 +229,39 @@ function Index() {
 
             <Flashcard word={word} showTranslation={mode === "learning"} feedback={feedback} />
 
+            {mode === "practice" && stats.learnedCount > 0 && (
+              <div className="mt-4 grid grid-cols-2 gap-3">
+                <div className="rounded-xl border border-[oklch(0.72_0.19_145/0.35)] bg-[oklch(0.72_0.19_145/0.08)] p-3 backdrop-blur-sm">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Likely to Remember
+                  </div>
+                  <div className="mt-1 text-2xl font-bold tabular-nums text-[oklch(0.82_0.18_145)]">
+                    {stats.avgRecall}%
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-[oklch(0.72_0.19_145)] transition-[width] duration-700"
+                      style={{ width: `${stats.avgRecall}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="rounded-xl border border-[oklch(0.65_0.22_25/0.35)] bg-[oklch(0.65_0.22_25/0.08)] p-3 backdrop-blur-sm">
+                  <div className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Likely to Forget
+                  </div>
+                  <div className="mt-1 text-2xl font-bold tabular-nums text-[oklch(0.78_0.18_30)]">
+                    {stats.likelyForget}%
+                  </div>
+                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full bg-[oklch(0.65_0.22_25)] transition-[width] duration-700"
+                      style={{ width: `${stats.likelyForget}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Action area */}
             <div className="mt-4 space-y-3">
               {mode === "practice" && (
