@@ -180,7 +180,7 @@ function Index() {
             value={`${stats.learnedCount}/${stats.total}`}
             hint={`${progressPct}% of vocabulary`}
           />
-          <StatCard label="Avg Recall" value={`${stats.avgRecall}%`} accent="strong" hint="Across learned words" />
+          <StatCard label="Avg Recall" value={`${stats.avgRecall}%`} accent="strong" hint="Projected 24h from now" />
           <StatCard
             label="Mastered"
             value={stats.mastered}
