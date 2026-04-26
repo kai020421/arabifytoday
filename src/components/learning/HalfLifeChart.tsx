@@ -96,7 +96,7 @@ export function HalfLifeChart({ vocab }: Props) {
                 fontSize: 12,
                 color: "oklch(0.97 0.01 250)",
               }}
-              formatter={(v: number) => [`${v} words`, "Count"]}
+              formatter={(v) => [`${v} words`, "Count"]}
             />
             <Bar dataKey="count" radius={[6, 6, 0, 0]}>
               {data.map((d, i) => (
