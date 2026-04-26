@@ -30,26 +30,33 @@ export function PracticePanel({ word, vocab, kind, resetKey, onAnswer, feedback 
   const inputRef = useRef<HTMLInputElement>(null);
   const lastRandomRef = useRef<RenderableQuizKind | undefined>(undefined);
 
-  // When kind === "random", lock in a randomly-picked sub-kind for this question.
-  const effectiveKind = useMemo<QuizKind>(() => {
-    if (kind !== "random") return kind;
-    const next = pickRandomQuizKind(lastRandomRef.current);
-    lastRandomRef.current = next;
-    return next;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetKey, kind]);
-
-  const question = useMemo<Question | null>(() => {
-    if (effectiveKind === "typing" || effectiveKind === "random") return null;
-    return buildQuestion(effectiveKind, word, vocab);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resetKey, effectiveKind]);
+  // Compute effectiveKind + question together as state, derived from resetKey/kind.
+  // We use useState + useEffect (not useMemo) because picking a random kind has
+  // side effects (advancing lastRandomRef) and useMemo can run twice in StrictMode.
+  const [{ effectiveKind, question }, setQuizState] = useState<{
+    effectiveKind: Exclude<QuizKind, "random">;
+    question: Question | null;
+  }>(() => {
+    const ek: Exclude<QuizKind, "random"> =
+      kind === "random" ? pickRandomQuizKind(lastRandomRef.current) : kind;
+    if (kind === "random") lastRandomRef.current = ek as RenderableQuizKind;
+    const q = ek === "typing" ? null : buildQuestion(ek, word, vocab);
+    return { effectiveKind: ek, question: q };
+  });
 
   useEffect(() => {
+    const ek: Exclude<QuizKind, "random"> =
+      kind === "random" ? pickRandomQuizKind(lastRandomRef.current) : kind;
+    if (kind === "random") lastRandomRef.current = ek as RenderableQuizKind;
+    const q = ek === "typing" ? null : buildQuestion(ek, word, vocab);
+    setQuizState({ effectiveKind: ek, question: q });
     setTyped("");
     setPicked(null);
-    if (effectiveKind === "typing" || effectiveKind === "fillblank") inputRef.current?.focus();
-  }, [resetKey, effectiveKind]);
+    if (ek === "typing" || ek === "fillblank") {
+      window.setTimeout(() => inputRef.current?.focus(), 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resetKey, kind]);
 
   function submitTyping() {
     if (typed.trim().length === 0 || feedback) return;
