@@ -34,24 +34,25 @@ export function PracticePanel({ word, vocab, kind, resetKey, onAnswer, feedback 
   // We use useState + useEffect (not useMemo) because picking a random kind has
   // side effects (advancing lastRandomRef) and useMemo can run twice in StrictMode.
   const [{ effectiveKind, question }, setQuizState] = useState<{
-    effectiveKind: QuizKind;
+    effectiveKind: Exclude<QuizKind, "random">;
     question: Question | null;
   }>(() => {
-    const ek: QuizKind = kind === "random" ? pickRandomQuizKind(lastRandomRef.current) : kind;
+    const ek: Exclude<QuizKind, "random"> =
+      kind === "random" ? pickRandomQuizKind(lastRandomRef.current) : kind;
     if (kind === "random") lastRandomRef.current = ek as RenderableQuizKind;
-    const q = ek === "typing" || ek === "random" ? null : buildQuestion(ek, word, vocab);
+    const q = ek === "typing" ? null : buildQuestion(ek, word, vocab);
     return { effectiveKind: ek, question: q };
   });
 
   useEffect(() => {
-    const ek: QuizKind = kind === "random" ? pickRandomQuizKind(lastRandomRef.current) : kind;
+    const ek: Exclude<QuizKind, "random"> =
+      kind === "random" ? pickRandomQuizKind(lastRandomRef.current) : kind;
     if (kind === "random") lastRandomRef.current = ek as RenderableQuizKind;
-    const q = ek === "typing" || ek === "random" ? null : buildQuestion(ek, word, vocab);
+    const q = ek === "typing" ? null : buildQuestion(ek, word, vocab);
     setQuizState({ effectiveKind: ek, question: q });
     setTyped("");
     setPicked(null);
     if (ek === "typing" || ek === "fillblank") {
-      // Focus on next tick after render
       window.setTimeout(() => inputRef.current?.focus(), 0);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
