@@ -13,6 +13,7 @@ import {
 } from "@/lib/memory-engine";
 import { Flashcard } from "@/components/learning/Flashcard";
 import { RetentionGraph } from "@/components/learning/RetentionGraph";
+import { HalfLifeChart } from "@/components/learning/HalfLifeChart";
 import { StatsTable } from "@/components/learning/StatsTable";
 import { StatCard } from "@/components/learning/StatBadge";
 import { PracticePanel } from "@/components/learning/PracticePanel";
@@ -53,20 +54,25 @@ function Index() {
 
   const stats = useMemo(() => {
     const learned = vocab.filter((w) => w.learned);
-    const tiers = { expert: 0, strong: 0, focus: 0 };
+    const tiers = { mastered: 0, needsPractice: 0 };
     let avgP = 0;
     const now = Date.now() / 1000;
     for (const w of learned) {
       const t = getTier(w.h);
-      if (t.key === "EXPERT") tiers.expert++;
-      if (t.key === "VERY STRONG" || t.key === "STRONG") tiers.strong++;
-      if (t.key === "FOCUS" || t.key === "VERY WEAK") tiers.focus++;
+      if (t.key === "EXPERT" || t.key === "VERY STRONG" || t.key === "STRONG") {
+        tiers.mastered++;
+      }
+      if (t.key === "FOCUS" || t.key === "VERY WEAK" || t.key === "WEAK") {
+        tiers.needsPractice++;
+      }
       avgP += getRecallProbability(w, now);
     }
+    const avgRecallPct = learned.length === 0 ? 0 : (avgP / learned.length) * 100;
     return {
       learnedCount: learned.length,
       total: vocab.length,
-      avgRecall: learned.length === 0 ? 0 : Math.round((avgP / learned.length) * 100),
+      avgRecall: Math.round(avgRecallPct),
+      likelyForget: Math.round(100 - avgRecallPct),
       ...tiers,
     };
   }, [vocab, currentIdx]);
@@ -170,8 +176,18 @@ function Index() {
             hint={`${progressPct}% of vocabulary`}
           />
           <StatCard label="Avg Recall" value={`${stats.avgRecall}%`} accent="strong" hint="Across learned words" />
-          <StatCard label="Expert Tier" value={stats.expert} accent="expert" hint="Half-life ≥ 30 days" />
-          <StatCard label="Need Focus" value={stats.focus} accent="focus" hint="Half-life < 0.5 days" />
+          <StatCard
+            label="Mastered"
+            value={stats.mastered}
+            accent="expert"
+            hint="Strong, Very Strong & Expert"
+          />
+          <StatCard
+            label="Needs Practice"
+            value={stats.needsPractice}
+            accent="focus"
+            hint="Focus, Very Weak & Weak"
+          />
         </section>
 
         {/* Progress bar */}
@@ -297,6 +313,11 @@ function Index() {
           <div className="lg:col-span-2">
             <RetentionGraph vocab={vocab} />
           </div>
+        </section>
+
+        {/* Half-life distribution */}
+        <section className="mb-10">
+          <HalfLifeChart vocab={vocab} />
         </section>
 
         {/* Stats table */}
