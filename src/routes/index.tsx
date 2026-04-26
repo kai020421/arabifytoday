@@ -57,6 +57,11 @@ function Index() {
     const tiers = { mastered: 0, needsPractice: 0 };
     let avgP = 0;
     const now = Date.now() / 1000;
+    // Project recall ONE DAY into the future. This makes the metric reflect
+    // memory STABILITY (half-life), not the trivially-high recall right after
+    // seeing a word. Otherwise wrong answers wouldn't move the number because
+    // lastSeen is reset to "now" on every answer.
+    const horizon = now + 86400;
     for (const w of learned) {
       const t = getTier(w.h);
       if (t.key === "EXPERT" || t.key === "VERY STRONG" || t.key === "STRONG") {
@@ -65,7 +70,7 @@ function Index() {
       if (t.key === "FOCUS" || t.key === "VERY WEAK" || t.key === "WEAK") {
         tiers.needsPractice++;
       }
-      avgP += getRecallProbability(w, now);
+      avgP += getRecallProbability(w, horizon);
     }
     const avgRecallPct = learned.length === 0 ? 0 : (avgP / learned.length) * 100;
     return {
