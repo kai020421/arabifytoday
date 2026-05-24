@@ -14,6 +14,7 @@ import {
 import { Flashcard } from "@/components/learning/Flashcard";
 import { RetentionGraph } from "@/components/learning/RetentionGraph";
 import { HalfLifeChart } from "@/components/learning/HalfLifeChart";
+import { RecallTimeline, TierRecallImpact } from "@/components/learning/RecallInsights";
 import { StatsTable } from "@/components/learning/StatsTable";
 import { StatCard } from "@/components/learning/StatBadge";
 import { PracticePanel } from "@/components/learning/PracticePanel";
@@ -427,6 +428,10 @@ function Index() {
                   </section>
                   <section className="mb-10">
                     <HalfLifeChart vocab={vocab} />
+                  </section>
+                  <section className="mb-10 grid gap-6 lg:grid-cols-2">
+                    <RecallTimeline vocab={vocab} />
+                    <TierRecallImpact vocab={vocab} />
                   </section>
                   <section className="mb-12">
                     <StatsTable vocab={vocab} />
