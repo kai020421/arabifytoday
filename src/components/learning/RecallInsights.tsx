@@ -82,7 +82,7 @@ export function RecallTimeline({ vocab }: { vocab: Word[] }) {
                 fontSize: 12,
                 color: "oklch(0.97 0.01 250)",
               }}
-              formatter={(v: number, n) => [`${v}%`, n === "recall" ? "Remember" : "Forget"]}
+              formatter={(v: any, n: any) => [`${v}%`, n === "recall" ? "Remember" : "Forget"]}
             />
             <Line
               type="monotone"
@@ -167,9 +167,9 @@ export function TierRecallImpact({ vocab }: { vocab: Word[] }) {
                 fontSize: 12,
                 color: "oklch(0.97 0.01 250)",
               }}
-              formatter={(v: number, _n, p) => [
-                `${v}% recall · ${p.payload.count} words`,
-                p.payload.tier,
+              formatter={(v: any, _n: any, p: any) => [
+                `${v}% recall · ${p?.payload?.count ?? 0} words`,
+                p?.payload?.tier ?? "",
               ]}
             />
             <Bar dataKey="recall" radius={[6, 6, 0, 0]}>
