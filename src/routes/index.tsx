@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw, Keyboard, ListChecks, SquarePen, ToggleLeft, Shuffle } from "lucide-react";
+import { Brain, GraduationCap, Sparkles, Target, ArrowRight, RotateCcw, Keyboard, ListChecks, SquarePen, ToggleLeft, Shuffle, BarChart3, Volume2, ChevronDown } from "lucide-react";
 import {
   applyPracticeResult,
   buildInitialVocab,
@@ -19,6 +19,8 @@ import { StatCard } from "@/components/learning/StatBadge";
 import { PracticePanel } from "@/components/learning/PracticePanel";
 import type { QuizKind } from "@/lib/quiz";
 import { pickFeedbackPhrase } from "@/lib/feedback";
+import { PHRASES } from "@/data/phrases";
+import { speakArabic } from "@/lib/speech";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -35,8 +37,13 @@ export const Route = createFileRoute("/")({
 });
 
 type Mode = "learning" | "practice";
+type View = "landing" | "learn" | "practice" | "dashboard";
+type PhraseTab = "Words" | "Phrases" | "Sentences";
 
 function Index() {
+  const [view, setView] = useState<View>("landing");
+  const [analyticsOpen, setAnalyticsOpen] = useState(true);
+  const [phraseTab, setPhraseTab] = useState<PhraseTab>("Words");
   const [vocab, setVocab] = useState<Word[]>(() => buildInitialVocab());
   const [currentIdx, setCurrentIdx] = useState(0);
   const [mode, setMode] = useState<Mode>("learning");
@@ -144,8 +151,34 @@ function Index() {
 
   const progressPct = Math.round((stats.learnedCount / stats.total) * 100);
 
+  // Sync mode with view when navigating between learn/practice tabs.
+  function goTo(next: View) {
+    setView(next);
+    if (next === "learn" && mode !== "learning") {
+      setMode("learning");
+      setFeedback(null);
+      setCurrentIdx(0);
+    } else if (next === "practice" && mode !== "practice") {
+      const idx = pickPracticeIndex(vocab, -1);
+      if (idx === -1) {
+        setMode("learning");
+        setView("learn");
+        return;
+      }
+      setMode("practice");
+      setCurrentIdx(idx);
+      setQuestionSeed((s) => s + 1);
+      setFeedback(null);
+    }
+  }
+
+  if (view === "landing") {
+    return <Landing onStart={() => goTo("learn")} />;
+  }
+
   return (
     <main className="min-h-screen bg-background text-foreground">
+      <NavBar current={view} onNavigate={goTo} />
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-12 lg:px-8 text-slate-100 bg-zinc-950">
         {/* Header */}
         <header className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
@@ -173,7 +206,8 @@ function Index() {
           </div>
         </header>
 
-        {/* Stats */}
+        {/* Stats — always visible quick glance */}
+        {view !== "dashboard" && (
         <section className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
           <StatCard
             label="Words Unlocked"
@@ -194,8 +228,10 @@ function Index() {
             hint="Focus, Very Weak & Weak"
           />
         </section>
+        )}
 
         {/* Progress bar */}
+        {view !== "dashboard" && (
         <div className="mb-10">
           <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
             <span>Overall Progress</span>
@@ -210,29 +246,35 @@ function Index() {
             />
           </div>
         </div>
+        )}
 
-        {/* Practice + chart */}
+        {/* Learn / Practice work area */}
+        {(view === "learn" || view === "practice") && (
         <section className="mb-10 grid gap-6 lg:grid-cols-5">
           <div className="lg:col-span-3">
-            {/* Mode toggle */}
-            <div className="mb-4 inline-flex rounded-xl border border-border bg-card/60 p-1 backdrop-blur-sm">
-              {(["learning", "practice"] as const).map((m) => (
-                <button
-                  key={m}
-                  onClick={() => mode !== m && toggleMode()}
-                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
-                    mode === m
-                      ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {m === "learning" ? <GraduationCap className="h-4 w-4" /> : <Target className="h-4 w-4" />}
-                  {m === "learning" ? "Learn" : "Practice"}
-                </button>
-              ))}
-            </div>
+            {view === "learn" && (
+              <div className="mb-4 inline-flex rounded-xl border border-border bg-card/60 p-1 backdrop-blur-sm">
+                {(["Words", "Phrases", "Sentences"] as const).map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setPhraseTab(t)}
+                    className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors sm:px-4 sm:text-sm ${
+                      phraseTab === t
+                        ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            <Flashcard word={word} showTranslation={mode === "learning"} feedback={feedback} />
+            {view === "learn" && phraseTab !== "Words" ? (
+              <PhraseDeck kind={phraseTab} />
+            ) : (
+              <Flashcard word={word} showTranslation={mode === "learning"} feedback={feedback} />
+            )}
 
             {mode === "practice" && stats.learnedCount > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-3">
@@ -301,7 +343,7 @@ function Index() {
                 </div>
               )}
 
-              {mode === "learning" ? (
+              {mode === "learning" && !(view === "learn" && phraseTab !== "Words") ? (
                 <button
                   onClick={handleLearned}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-6 py-3 text-sm font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-all hover:brightness-110 active:scale-[0.98]"
@@ -309,7 +351,7 @@ function Index() {
                   Mark as Learned
                   <ArrowRight className="h-4 w-4" />
                 </button>
-              ) : (
+              ) : mode === "practice" ? (
                 <PracticePanel
                   word={word}
                   vocab={vocab}
@@ -318,7 +360,7 @@ function Index() {
                   onAnswer={handlePracticeAnswer}
                   feedback={feedback}
                 />
-              )}
+              ) : null}
 
               <AnimatePresence>
                 {mode === "practice" && feedback && feedbackPhrase && (
@@ -352,21 +394,211 @@ function Index() {
             <RetentionGraph vocab={vocab} />
           </div>
         </section>
+        )}
 
-        {/* Half-life distribution */}
-        <section className="mb-10">
-          <HalfLifeChart vocab={vocab} />
-        </section>
-
-        {/* Stats table */}
-        <section className="mb-12">
-          <StatsTable vocab={vocab} />
-        </section>
+        {/* Dashboard / Analytics — collapsible */}
+        {view === "dashboard" && (
+          <>
+            <button
+              onClick={() => setAnalyticsOpen((o) => !o)}
+              className="mb-4 inline-flex items-center gap-2 rounded-xl border border-border bg-card/60 px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:border-primary/50"
+            >
+              <BarChart3 className="h-4 w-4 text-primary" />
+              Analytics
+              <ChevronDown className={`h-4 w-4 transition-transform ${analyticsOpen ? "rotate-180" : ""}`} />
+            </button>
+            <AnimatePresence initial={false}>
+              {analyticsOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
+                >
+                  <section className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+                    <StatCard label="Words Unlocked" value={`${stats.learnedCount}/${stats.total}`} hint={`${progressPct}% of vocabulary`} />
+                    <StatCard label="Avg Recall" value={`${stats.avgRecall}%`} accent="strong" hint="Projected 24h from now" />
+                    <StatCard label="Mastered" value={stats.mastered} accent="expert" hint="Strong, Very Strong & Expert" />
+                    <StatCard label="Needs Practice" value={stats.needsPractice} accent="focus" hint="Focus, Very Weak & Weak" />
+                  </section>
+                  <section className="mb-10">
+                    <RetentionGraph vocab={vocab} />
+                  </section>
+                  <section className="mb-10">
+                    <HalfLifeChart vocab={vocab} />
+                  </section>
+                  <section className="mb-12">
+                    <StatsTable vocab={vocab} />
+                  </section>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </>
+        )}
 
         <footer className="border-t border-border/60 pt-6 text-center text-xs text-muted-foreground">
           Memory Engine v4.0 — Powered by Half-Life Regression
         </footer>
       </div>
     </main>
+  );
+}
+
+function NavBar({ current, onNavigate }: { current: View; onNavigate: (v: View) => void }) {
+  const items: { key: View; label: string; Icon: typeof GraduationCap }[] = [
+    { key: "learn", label: "Learn", Icon: GraduationCap },
+    { key: "practice", label: "Practice", Icon: Target },
+    { key: "dashboard", label: "Dashboard", Icon: BarChart3 },
+  ];
+  return (
+    <nav className="sticky top-0 z-40 border-b border-border/60 bg-background/80 backdrop-blur-md">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
+        <button
+          onClick={() => onNavigate("learn")}
+          className="flex items-center gap-2 text-sm font-bold tracking-tight text-primary"
+        >
+          <Sparkles className="h-4 w-4" />
+          ArabifyToday
+        </button>
+        <div className="inline-flex rounded-xl border border-border bg-card/60 p-1">
+          {items.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              onClick={() => onNavigate(key)}
+              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors sm:text-sm ${
+                current === key
+                  ? "bg-primary text-primary-foreground shadow-[var(--shadow-glow)]"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              <span className="hidden sm:inline">{label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function Landing({ onStart }: { onStart: () => void }) {
+  return (
+    <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,oklch(0.45_0.18_230/0.18),transparent_60%)]" />
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col items-center justify-center px-4 py-16 text-center sm:px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mb-5 inline-flex items-center gap-2 rounded-full border border-border/60 bg-card/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm"
+        >
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          Half-Life Regression Engine
+        </motion.div>
+        <motion.h1
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.05 }}
+          className="text-5xl font-bold tracking-tight sm:text-7xl"
+        >
+          <span className="bg-[image:var(--gradient-primary)] bg-clip-text text-transparent">ArabifyToday</span>
+        </motion.h1>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-4 max-w-2xl text-base text-muted-foreground sm:text-lg"
+        >
+          Master Arabic words, phrases & sentences with an adaptive memory engine that learns how
+          <em> you</em> remember.
+        </motion.p>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.7, delay: 0.35 }}
+          className="mt-12 w-full max-w-2xl"
+        >
+          <div className="relative overflow-hidden rounded-3xl border border-primary/30 bg-[image:var(--gradient-card)] p-10 shadow-[var(--shadow-elegant)] sm:p-14">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/60 to-transparent" />
+            <div
+              dir="rtl"
+              lang="ar"
+              className="text-center text-6xl font-bold leading-tight text-primary sm:text-8xl"
+              style={{
+                textShadow: "0 0 40px oklch(0.75 0.16 230 / 0.45)",
+                fontFamily: "'Noto Naskh Arabic', 'Amiri', serif",
+              }}
+            >
+              مرحباً
+            </div>
+            <div className="mt-6 text-center text-xl font-medium text-muted-foreground sm:text-2xl">
+              Hello — welcome
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.button
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.55 }}
+          onClick={onStart}
+          className="mt-10 inline-flex items-center gap-2 rounded-xl bg-[image:var(--gradient-primary)] px-8 py-4 text-base font-semibold text-primary-foreground shadow-[var(--shadow-glow)] transition-all hover:brightness-110 active:scale-[0.98]"
+        >
+          Start Learning
+          <ArrowRight className="h-5 w-5" />
+        </motion.button>
+
+        <div className="mt-12 grid grid-cols-3 gap-4 text-xs text-muted-foreground sm:text-sm">
+          <div>200 essential words</div>
+          <div>Phrases & sentences</div>
+          <div>Adaptive recall</div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+function PhraseDeck({ kind }: { kind: "Phrases" | "Sentences" }) {
+  const cat = kind === "Phrases" ? "Phrase" : "Sentence";
+  const items = PHRASES.filter((p) => p.category === cat);
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-border/60 bg-[image:var(--gradient-card)] p-6 sm:p-8">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-foreground">{kind}</h3>
+        <span className="rounded-full border border-border/60 bg-background/40 px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+          {items.length} items
+        </span>
+      </div>
+      <div className="grid max-h-[520px] gap-3 overflow-y-auto pr-1">
+        {items.map((p, i) => (
+          <div
+            key={i}
+            className="group flex items-center justify-between gap-4 rounded-xl border border-border/50 bg-background/30 p-4 transition-colors hover:border-primary/40"
+          >
+            <div className="flex-1">
+              <div
+                dir="rtl"
+                lang="ar"
+                className="text-2xl font-semibold text-primary sm:text-3xl"
+                style={{ fontFamily: "'Noto Naskh Arabic', 'Amiri', serif" }}
+              >
+                {p.target}
+              </div>
+              <div className="mt-1 text-sm text-muted-foreground">{p.known}</div>
+            </div>
+            <button
+              onClick={() => speakArabic(p.target)}
+              className="rounded-full border border-border/60 bg-background/40 p-2 text-muted-foreground transition-colors hover:border-primary/60 hover:text-primary"
+              aria-label="Pronounce"
+            >
+              <Volume2 className="h-4 w-4" />
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
